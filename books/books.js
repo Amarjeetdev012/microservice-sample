@@ -3,20 +3,20 @@ dotenv.config();
 import express from 'express';
 import { connectDatabase } from '../db/db.js';
 import Book from './Book.js';
+import logger from 'morgan';
 
-// Connect
+// Connect database
 connectDatabase(process.env.MONGO_URI);
-
 const app = express();
+app.use(logger('dev'));
 const port = 3000;
 app.use(express.json());
 
 app.post('/book', (req, res) => {
-  const newBook = new Book({ ...req.body });
-  newBook
-    .save()
+  const data = req.body;
+  Book.create(data)
     .then(() => {
-      res.send('New Book added successfully!');
+      res.status(200).send('New Book added successfully!');
     })
     .catch((err) => {
       res.status(500).send('Internal Server Error!');
@@ -63,5 +63,5 @@ app.delete('/book/:id', (req, res) => {
     });
 });
 app.listen(port, () => {
-  console.log(`Up and Running on port ${port} - This is Book service`);
+  console.log(`server is Running on port ${port} - This is Book service`);
 });

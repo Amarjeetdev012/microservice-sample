@@ -2,12 +2,15 @@ import dotenv from 'dotenv';
 dotenv.config();
 import express from 'express';
 import { connectDatabase } from '../db/db.js';
+import logger from 'morgan';
 
 // Connect
 connectDatabase(process.env.MONGO_URI)
 import Customer from './Customer.js';
 
 const app = express();
+app.use(logger('dev'));
+
 const port = 5000;
 app.use(express.json())
 
@@ -56,5 +59,5 @@ Customer.findByIdAndRemove(req.params.id).then((customer) => {
 });
 
 app.listen(port, () => {
-    console.log(`Up and Running on port ${port}- This is Customer service`);
+    console.log(`server is Running on port ${port}- This is Customer service`);
 })

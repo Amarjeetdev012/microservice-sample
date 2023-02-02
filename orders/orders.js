@@ -7,10 +7,13 @@ import { connectDatabase } from '../db/db.js';
 // Connect
 connectDatabase(process.env.MONGO_URI);
 import Order from './Order.js';
+import logger from 'morgan';
 
 const app = express();
 const port = 9000;
 app.use(express.json());
+app.use(logger('dev'));
+
 app.post('/order', (req, res) => {
   const newOrder = new Order({
     customerID: mongoose.Types.ObjectId(req.body.customerID),
@@ -69,5 +72,5 @@ app.get('/order/:id', (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Up and Running on port ${port} - This is Order service`);
+  console.log(`server is Running on port ${port} - This is Order service`);
 });
