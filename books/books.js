@@ -16,7 +16,7 @@ app.post('/book', (req, res) => {
   const data = req.body;
   Book.create(data)
     .then(() => {
-      res.status(200).send('New Book added successfully!');
+      res.status(201).send('New Book added successfully!');
     })
     .catch((err) => {
       res.status(500).send('Internal Server Error!');
@@ -27,7 +27,7 @@ app.get('/books', (req, res) => {
   Book.find()
     .then((books) => {
       if (books.length !== 0) {
-        res.json(books);
+        res.status(200).send(books);
       } else {
         res.status(404).send('Books not found');
       }
