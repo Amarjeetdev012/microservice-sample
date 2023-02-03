@@ -14,25 +14,36 @@ const port = 6000;
 app.use(express.json());
 app.use(logger('dev'));
 
+// Validator function for objectid
+const ObjectId = mongoose.Types.ObjectId;
+function isValidObjectId(id) {
+  if (ObjectId.isValid(id)) {
+    if (String(new ObjectId(id)) === id) return true;
+    return false;
+  }
+  return false;
+}
+
 // create order
 app.post('/order', async (req, res) => {
   const data = req.body;
   const { customerID, bookID, initialDate } = data;
-  if (!customerID || bookID || initialDate) {
+  if (!customerID || !bookID || !initialDate) {
     return res.status(400).send({
       status: false,
       message:
         'something missing please check you have put all details customerID,bookID,initialDate',
     });
   }
-  if (
-    !mongoose.Types.ObjectId(customerID) ||
-    !mongoose.Types.ObjectId(bookID)
-  ) {
-    return res.status(400).send({
-      status: false,
-      message: 'please provide valid customerID or bookID',
-    });
+  if (!isValidObjectId(customerID)) {
+    return res
+      .status(400)
+      .send({ status: false, message: 'please provide a valid customerID id' });
+  }
+  if (!isValidObjectId(bookID)) {
+    return res
+      .status(400)
+      .send({ status: false, message: 'please provide a valid bookID id' });
   }
   await Order.create(data)
     .then(() => {
@@ -68,31 +79,38 @@ app.get('/orders', (req, res) => {
 
 // get order by id
 app.get('/order/:id', (req, res) => {
-  Order.findById(req.params.id)
+  const id = req.params.id;
+  if (!isValidObjectId(id)) {
+    return res
+      .status(400)
+      .send({ status: false, message: 'please provide a valid order id' });
+  }
+  Order.findById(id)
     .then((order) => {
+      const customerId = order.customerID.toString();
       if (order) {
         axios
-          .get(`http://localhost:5000/customer/${order.customerID}`)
+          .get(`http://localhost:5000/customer/${customerId}`)
           .then((response) => {
             let orderObject = {
-              CustomerName: response.data.name,
+              CustomerName: response.data.data.name,
               BookTitle: '',
             };
+            const bookID = order.bookID.toString();
             axios
-              .get(`http://localhost:4000/book/${order.bookID}`)
+              .get(`http://localhost:4000/book/${bookID}`)
               .then((response) => {
-                orderObject.BookTitle = response.data.title;
-                res
-                  .status(200)
-                  .send({
-                    status: true,
-                    message: 'order get sucesfully by id',
-                    data: orderObject,
-                  });
+            console.log('response========', response.data.data);
+                orderObject.BookTitle = response.data.data.title;
+                res.status(200).send({
+                  status: true,
+                  message: 'order details get sucesfully by id',
+                  data: orderObject,
+                });
               });
           });
       } else {
-        res.status(404).send({status:false,message:'Orders not found'});
+        res.status(404).send({ status: false, message: 'Orders not found' });
       }
     })
     .catch((err) => {

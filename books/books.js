@@ -4,6 +4,7 @@ import express from 'express';
 import { connectDatabase } from '../db/db.js';
 import Book from './Book.js';
 import logger from 'morgan';
+import mongoose from 'mongoose';
 
 // Connect database
 connectDatabase(process.env.MONGO_URI);
@@ -12,6 +13,15 @@ app.use(logger('dev'));
 const port = 4000;
 app.use(express.json());
 
+// Validator function for objectid
+const ObjectId = mongoose.Types.ObjectId;
+function isValidObjectId(id) {
+  if (ObjectId.isValid(id)) {
+    if (String(new ObjectId(id)) === id) return true;
+    return false;
+  }
+  return false;
+}
 // create a book
 app.post('/book', (req, res) => {
   const data = req.body;
@@ -46,7 +56,7 @@ app.get('/books', (req, res) => {
       if (books.length !== 0) {
         res.status(200).send({
           status: true,
-          message: 'New Book added successfully!',
+          message: 'Book found successfully!',
           data: books,
         });
       } else {
@@ -60,12 +70,18 @@ app.get('/books', (req, res) => {
 
 // get book by id
 app.get('/book/:id', (req, res) => {
-  Book.findById(req.params.id)
+  const id = req.params.id;
+  if (!isValidObjectId(id)) {
+    return res
+      .status(400)
+      .send({ status: false, message: 'please provide a valid object id' });
+  }
+  Book.findById(id)
     .then((book) => {
       if (book) {
         res
           .status(200)
-          .send({ status: true, message: 'data find sucessfully', data: book });
+          .send({ status: true, message: 'book find sucessfully', data: book });
       } else {
         res.status(404).send({ status: false, message: 'Books not found' });
       }
@@ -77,11 +93,11 @@ app.get('/book/:id', (req, res) => {
 
 // delete book by id
 app.delete('/book/:id', (req, res) => {
-  Book.findOneAndRemove(req.params.id)
+  Book.findByIdAndDelete(req.params.id)
     .then((book) => {
       if (book) {
         res
-          .status(200)
+          .status(204)
           .send({ status: true, message: 'Book deleted Successfully!' });
       } else {
         res.status(404).send({ status: false, message: 'Book Not found!' });

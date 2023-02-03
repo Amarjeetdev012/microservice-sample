@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 import express from 'express';
+import mongoose from 'mongoose';
 import { connectDatabase } from '../db/db.js';
 import logger from 'morgan';
 
@@ -14,10 +15,20 @@ app.use(logger('dev'));
 const port = 5000;
 app.use(express.json());
 
+// Validator function for objectid
+const ObjectId = mongoose.Types.ObjectId;
+function isValidObjectId(id) {
+  if (ObjectId.isValid(id)) {
+    if (String(new ObjectId(id)) === id) return true;
+    return false;
+  }
+  return false;
+}
+
 // create customer
 app.post('/customer', async (req, res) => {
   const data = req.body;
-  const { name, age, address } = body;
+  const { name, age, address } = data;
   if (!name || !age || !address) {
     return res.status(400).send({
       status: false,
@@ -58,7 +69,13 @@ app.get('/customers', (req, res) => {
 
 // get custome by id
 app.get('/customer/:id', (req, res) => {
-  Customer.findById(req.params.id)
+  const id = req.params.id;
+  if (!isValidObjectId(id)) {
+    return res
+      .status(400)
+      .send({ status: false, message: 'please provide a valid object id' });
+  }
+  Customer.findById(id)
     .then((customer) => {
       if (customer) {
         res.status(200).send({
@@ -77,7 +94,13 @@ app.get('/customer/:id', (req, res) => {
 
 // delete by id
 app.delete('/customer/:id', (req, res) => {
-  Customer.findByIdAndRemove(req.params.id)
+  const id = req.params.id;
+  if (!isValidObjectId(id)) {
+    return res
+      .status(400)
+      .send({ status: false, message: 'please provide a valid object id' });
+  }
+  Customer.findByIdAndRemove(id)
     .then((customer) => {
       if (customer) {
         res
