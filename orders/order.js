@@ -1,24 +1,23 @@
 import mongoose from 'mongoose';
 
 const orderSchema = mongoose.Schema({
-    customerID: {
-       type: mongoose.SchemaTypes.ObjectId,
-       require: true
-     },
-     bookID: {
-       type: mongoose.SchemaTypes.ObjectId,
-       require: true
-     },
-     initialDate: {
-        type: Date,
-        require: true
-     },
-     deliveryDate: {
-        type: Date,
-        require: false
-     }
-})
+  customerID: {
+    type: mongoose.SchemaTypes.ObjectId,
+    required: true,
+  },
+  bookID: {
+    type: mongoose.SchemaTypes.ObjectId,
+    required: true,
+  },
+  initialDate: {
+    type: Date,
+    required: true,
+  },
+  deliveryDate: {
+    type: Date,
+  },
+});
 
-const Order = mongoose.model("order", orderSchema);
+const Order = mongoose.model('order', orderSchema);
 
-export default Order
+export default Order;

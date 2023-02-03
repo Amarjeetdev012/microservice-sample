@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import axios from 'axios';
+import axios, { isCancel } from 'axios';
 import dotenv from 'dotenv';
 dotenv.config();
 import express from 'express';
@@ -10,40 +10,63 @@ import Order from './Order.js';
 import logger from 'morgan';
 
 const app = express();
-const port = 9000;
+const port = 6000;
 app.use(express.json());
 app.use(logger('dev'));
 
-app.post('/order', (req, res) => {
-  const newOrder = new Order({
-    customerID: mongoose.Types.ObjectId(req.body.customerID),
-    bookID: mongoose.Types.ObjectId(req.body.bookID),
-    initialDate: req.body.initialDate,
-    deliveryDate: req.body.deliveryDate,
-  });
-  newOrder
-    .save()
+// create order
+app.post('/order', async (req, res) => {
+  const data = req.body;
+  const { customerID, bookID, initialDate } = data;
+  if (!customerID || bookID || initialDate) {
+    return res.status(400).send({
+      status: false,
+      message:
+        'something missing please check you have put all details customerID,bookID,initialDate',
+    });
+  }
+  if (
+    !mongoose.Types.ObjectId(customerID) ||
+    !mongoose.Types.ObjectId(bookID)
+  ) {
+    return res.status(400).send({
+      status: false,
+      message: 'please provide valid customerID or bookID',
+    });
+  }
+  await Order.create(data)
     .then(() => {
-      res.send('New order added successfully!');
+      return res.status(201).send({
+        status: true,
+        message: 'New order added successfully!',
+        data: data,
+      });
     })
     .catch((err) => {
-      res.status(500).send('Internal Server Error!');
+      return res.status(500).send({ status: false, msg: err.message });
     });
 });
+
+// get orders
 app.get('/orders', (req, res) => {
   Order.find()
     .then((orders) => {
       if (orders) {
-        res.json(orders);
+        res.status(200).send({
+          status: true,
+          message: 'orders find succesfully',
+          data: orders,
+        });
       } else {
-        res.status(404).send('Orders not found');
+        res.status(404).send({ status: false, message: 'Orders not found' });
       }
     })
     .catch((err) => {
-      res.status(500).send('Internal Server Error!');
+      return res.status(500).send({ status: false, msg: err.message });
     });
 });
 
+// get order by id
 app.get('/order/:id', (req, res) => {
   Order.findById(req.params.id)
     .then((order) => {
@@ -56,21 +79,28 @@ app.get('/order/:id', (req, res) => {
               BookTitle: '',
             };
             axios
-              .get(`http://localhost:3000/book/${order.bookID}`)
+              .get(`http://localhost:4000/book/${order.bookID}`)
               .then((response) => {
                 orderObject.BookTitle = response.data.title;
-                res.json(orderObject);
+                res
+                  .status(200)
+                  .send({
+                    status: true,
+                    message: 'order get sucesfully by id',
+                    data: orderObject,
+                  });
               });
           });
       } else {
-        res.status(404).send('Orders not found');
+        res.status(404).send({status:false,message:'Orders not found'});
       }
     })
     .catch((err) => {
-      res.status(500).send('Internal Server Error!');
+      return res.status(500).send({ status: false, msg: err.message });
     });
 });
 
+// listening port
 app.listen(port, () => {
   console.log(`server is Running on port ${port} - This is Order service`);
 });
